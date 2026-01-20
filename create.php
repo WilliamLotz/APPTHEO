@@ -5,7 +5,7 @@
     <header class="mb-3">
         <h2 class="h4">Créer un parcours</h2>
     </header>
-    <div id="map-container" class="rounded mb-3 flex-grow-1" style="min-height: 300px;"></div>
+    <div id="map-container" class="rounded mb-3 flex-grow-1" style="min-height: 400px; background: #2a2d35; border: 1px solid #444;"></div>
     <p class="small text-muted text-center">Touchez la carte pour ajouter des points.</p>
     
     <div class="card mb-3 border-0 bg-surface">
@@ -28,3 +28,17 @@
 
 <?php include 'includes/nav.php'; ?>
 <?php include 'includes/scripts.php'; ?>
+
+<script>
+    // Force Map Init backup
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("Force Map Init Triggered");
+        setTimeout(() => {
+            if (typeof window.initEditorMode === 'function') {
+                window.initEditorMode();
+            } else {
+                console.error("initEditorMode not found");
+            }
+        }, 500);
+    });
+</script>

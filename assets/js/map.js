@@ -12,13 +12,25 @@ let markerCounter = 0; // GLOBAL ID COUNTER
 // Fake start position (Paris for default)
 const DEFAULT_COORDS = [48.8566, 2.3522];
 
-window.initEditorMap = function () {
-    if (editorMap) return; // Already init
-
+window.initEditorMode = function () {
     const container = document.getElementById('map-container');
     if (!container) return;
 
+    if (editorMap) {
+        editorMap.invalidateSize();
+        return;
+    }
+
+    // Safety check if Leaflet is already initialized via class
+    if (container.classList.contains('leaflet-container')) {
+        container._leaflet_id = null;
+        container.innerHTML = "";
+    }
+
     editorMap = L.map('map-container').setView(DEFAULT_COORDS, 13);
+
+    // Fix: Invalidate size after short delay to handle Flexbox layout
+    setTimeout(() => { editorMap.invalidateSize(); }, 200);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',

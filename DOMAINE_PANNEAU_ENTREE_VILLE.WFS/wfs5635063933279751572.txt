@@ -1,2 +1,0 @@
-URL WFS de la Donnée: DOMAINE_PANNEAU_ENTREE_VILLE
-http://data.agglo-lehavre.fr/arcgis/services/voirie_transport_et_deplacement/MapServer/WFSServer?request=GetCapabilities&service=WFS

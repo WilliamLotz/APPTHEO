@@ -42,7 +42,7 @@ const App = {
         }
 
         if (path.includes('create.php')) {
-            this.initEditorMode();
+            setTimeout(() => this.initEditorMode(), 100);
         } else if (path.includes('go.php')) {
             this.initNavigationMode();
         }
