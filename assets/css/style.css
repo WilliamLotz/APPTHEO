@@ -1,0 +1,286 @@
+/* TrailConnect Premium Design System */
+:root {
+    /* Colors */
+    --bg-app: #0f1115;
+    --bg-surface: #181b21;
+    --bg-surface-2: #232730;
+
+    --primary: #00f2aa;
+    /* Green Energy */
+    --primary-dim: #00c78b;
+    --secondary: #6c5ce7;
+    /* Purple flow */
+
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;
+
+    --success: #2ecc71;
+    --warning: #f1c40f;
+    --danger: #e74c3c;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-full: 999px;
+
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
+    --shadow-glow: 0 0 15px rgba(0, 242, 170, 0.3);
+
+    /* Bootstrap Overrides */
+    --bs-primary: var(--primary);
+    --bs-primary-rgb: 0, 242, 170;
+    --bs-body-bg: var(--bg-app);
+    --bs-body-color: var(--text-main);
+}
+
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    line-height: 1.5;
+    min-height: 100vh;
+    /* Removed overflow:hidden to allow scrolling */
+    display: flex;
+    flex-direction: column;
+}
+
+/* App Shell */
+#app {
+    flex: 1;
+    position: relative;
+    /* Removed overflow-y: auto to let body scroll */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 80px;
+    /* Space for fixed bottom nav */
+}
+
+/* Views Management */
+.view {
+    display: none;
+    padding: var(--spacing-md);
+    /* padding-bottom: 80px; Removed, handled by #app container */
+    animation: fadeIn 0.3s ease;
+    min-height: 100%;
+}
+
+.view.active {
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Typography */
+h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: var(--spacing-sm);
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-main);
+}
+
+p {
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-md);
+}
+
+.text-gradient {
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Components */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 24px;
+    background: var(--bg-surface-2);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-decoration: none;
+    width: 100%;
+    margin-bottom: var(--spacing-sm);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dim);
+}
+
+.card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.input-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-surface-2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+input:focus {
+    outline: 2px solid var(--primary);
+    border-color: transparent;
+}
+
+/* Navigation Bar */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(24, 27, 33, 0.9);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-around;
+    padding: var(--spacing-sm) 0;
+    z-index: 1000;
+}
+
+.nav-item {
+    color: var(--text-muted);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.75rem;
+    gap: 4px;
+    padding: 8px;
+    transition: var(--transition-fast);
+}
+
+.nav-item svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.nav-item.active {
+    color: var(--primary);
+}
+
+/* Map Specifics */
+#map-container,
+#nav-map-container {
+    height: 300px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: var(--spacing-md);
+    z-index: 1;
+    cursor: crosshair !important;
+    /* Force precision cursor */
+}
+
+/* Override Leaflet default cursors for better precision feeling */
+.leaflet-container,
+.leaflet-grab,
+.leaflet-interactive {
+    cursor: crosshair !important;
+}
+
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+    cursor: move !important;
+    /* Keep move cursor only when dragging */
+}
+
+.leaflet-container {
+    font-family: inherit;
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+.mt-auto {
+    margin-top: auto;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
