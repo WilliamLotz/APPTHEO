@@ -35,9 +35,16 @@ const App = {
         // Profile form listener if on profile page
         const profileForm = document.getElementById('profile-form');
         if (profileForm) {
+            // Populate
+            if (this.state.currentUser) {
+                document.getElementById('inp-name').value = this.state.currentUser.username || '';
+                document.getElementById('inp-mode').value = this.state.currentUser.mode || 'solo';
+                document.getElementById('inp-team').value = this.state.currentUser.team_id || '';
+            }
+
             profileForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                this.saveProfile();
+                this.saveProfile(); // Changed to saveProfile
             });
         }
 
@@ -45,6 +52,8 @@ const App = {
             setTimeout(() => this.initEditorMode(), 100);
         } else if (path.includes('go.php')) {
             this.initNavigationMode();
+        } else if (path.includes('pois.php')) {
+            this.initPoisMode();
         }
     },
 
@@ -64,10 +73,41 @@ const App = {
     },
 
     async saveProfile() {
-        // ... handled in profile view usually, but let's keep it clean
-        // Note: Profile.php has its own form handler in checkCurrentPage() -> calls this.saveUpdateProfile() likely?
-        // Wait, the original code had saveProfile here. We should look at that.
-        // For now let's just make sure Render handles the Login redirect.
+        if (!this.state.currentUser) return;
+
+        const name = document.getElementById('inp-name').value;
+        const mode = document.getElementById('inp-mode').value;
+        const team = document.getElementById('inp-team').value.toUpperCase();
+
+        try {
+            const res = await fetch('./api/auth.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'update',
+                    id: this.state.currentUser.id,
+                    username: name,
+                    mode: mode,
+                    team_id: team
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Update Local State
+                this.state.currentUser.username = name;
+                this.state.currentUser.mode = mode;
+                this.state.currentUser.team_id = team;
+                localStorage.setItem('tc_user', JSON.stringify(this.state.currentUser));
+
+                alert("Profil mis à jour !");
+                this.render(); // Update header name
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur réseau");
+        }
     },
 
     // ...
@@ -167,6 +207,154 @@ const App = {
             document.getElementById('nav-active').classList.add('d-none');
             document.getElementById('nav-active').classList.remove('d-flex');
             // TODO: Stop tracking in map.js
+        }
+    },
+
+    // --- POIS MODULE ---
+    initPoisMode() {
+        if (!this.state.currentUser) return; // Should allow redirect
+        console.log("POIs Mode Initialized");
+
+        // Load List
+        this.loadPois();
+
+        // Init Map
+        if (window.initPoisMap) window.initPoisMap();
+
+        // Form Handler
+        const form = document.getElementById('poi-form');
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                await this.savePoi();
+            };
+        }
+
+        // Modal Close Handler to reset toggle button
+        const modalEl = document.getElementById('poiModal');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                // Only reset if we are still in "danger" mode (meaning we didn't just save which resets it too)
+                const btn = document.getElementById('btn-add-poi');
+                if (btn && btn.classList.contains('btn-danger')) {
+                    // Call Cancel logic
+                    this.togglePoiCreationMode();
+                }
+            });
+        }
+    },
+
+    async loadPois() {
+        const listContainer = document.getElementById('pois-list');
+        if (!listContainer) return;
+
+        try {
+            const res = await fetch(`./api/pois.php?user_id=${this.state.currentUser.id}`);
+            const data = await res.json();
+
+            if (data.success) {
+                // Render List
+                if (data.points.length === 0) {
+                    listContainer.innerHTML = '<p class="text-center text-muted small p-3">Aucun point enregistré.</p>';
+                } else {
+                    listContainer.innerHTML = data.points.map(p => `
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>${p.name}</strong> <span class="badge bg-warning text-dark rounded-pill ms-1">${p.score || 0} pts</span>
+                                <p class="mb-0 small text-muted text-truncate" style="max-width: 200px;">${p.description || ''}</p>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="App.deletePoi(${p.id})">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                }
+
+                // Render on Map
+                if (window.renderPoisOnMap) window.renderPoisOnMap(data.points);
+            }
+        } catch (e) {
+            console.error(e);
+            listContainer.innerHTML = '<p class="text-danger">Erreur chargement</p>';
+        }
+    },
+
+    async savePoi() {
+        const name = document.getElementById('poi-name').value;
+        const score = document.getElementById('poi-score').value;
+        const desc = document.getElementById('poi-desc').value;
+        const lat = document.getElementById('poi-lat').value;
+        const lng = document.getElementById('poi-lng').value;
+
+        if (!name || !lat) {
+            alert("Erreur de données");
+            return;
+        }
+
+        try {
+            const res = await fetch('./api/pois.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    user_id: this.state.currentUser.id,
+                    name, score: score, description: desc, lat, lng
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Close modal (Bootstrap 5 vanilla way)
+                const modalEl = document.getElementById('poiModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+
+                // Refresh
+                this.loadPois();
+                document.getElementById('poi-form').reset();
+
+                // Reset UI Button
+                const btn = document.getElementById('btn-add-poi');
+                if (btn && window.disablePoiMapClick) {
+                    window.disablePoiMapClick(); // Stop click listener
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-primary');
+                    btn.innerHTML = '<i class="ph-bold ph-plus me-1"></i> Nouveau';
+                }
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur sauvegardé");
+        }
+    },
+
+    async deletePoi(id) {
+        if (!confirm("Supprimer ce point ?")) return;
+        try {
+            const res = await fetch(`./api/pois.php?id=${id}`, { method: 'DELETE' });
+            if ((await res.json()).success) {
+                this.loadPois();
+            }
+        } catch (e) {
+            alert("Erreur");
+        }
+    },
+
+    togglePoiCreationMode() {
+        const btn = document.getElementById('btn-add-poi');
+        if (btn.classList.contains('btn-danger')) {
+            // Cancel mode
+            if (window.disablePoiMapClick) window.disablePoiMapClick();
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-primary');
+            btn.innerHTML = '<i class="ph-bold ph-plus me-1"></i> Nouveau';
+        } else {
+            // Enable mode
+            if (window.enablePoiMapClick) window.enablePoiMapClick();
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-danger');
+            btn.innerHTML = '<i class="ph-bold ph-x me-1"></i> Annuler';
+            // alert removed as requested
         }
     }
 };

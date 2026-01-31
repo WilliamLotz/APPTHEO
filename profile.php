@@ -20,10 +20,12 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label text-muted">ID Équipe (Si Binôme)</label>
-            <input type="text" class="form-control" placeholder="Généré automatiquement..." disabled style="opacity: 0.5;">
+            <label for="inp-team" class="form-label text-muted">Nom de l'équipe (Partage de parcours)</label>
+            <input type="text" class="form-control" id="inp-team" placeholder="Ex: TEAM_ROCKET" style="text-transform: uppercase;">
+            <div class="form-text small">Partagez ce nom EXACT avec vos amis pour voir leurs parcours.</div>
         </div>
 
+        <button type="submit" class="btn btn-primary w-100 mb-3">Sauvegarder</button>
         <button type="button" class="btn btn-danger w-100 mb-3" onclick="App.logout()">Se déconnecter</button>
     </form>
 </div>

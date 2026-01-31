@@ -38,16 +38,36 @@ window.initEditorMode = function () {
         maxZoom: 20
     }).addTo(editorMap);
 
-    // Click handler: Manual Point Addition
-    editorMap.on('click', function (e) {
+    // Click handler: Manual Point Addition with Snap-to-Road
+    editorMap.on('click', async function (e) {
+        let latlng = e.latlng;
+        // Visual feedback
+        const loadingMarker = L.marker(latlng, { opacity: 0.5 }).addTo(editorMap);
+
+        try {
+            // SNAP TO ROAD
+            const url = `https://router.project-osrm.org/nearest/v1/driving/${latlng.lng},${latlng.lat}?number=1`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.code === 'Ok' && data.waypoints && data.waypoints.length > 0) {
+                const snapped = data.waypoints[0].location; // [lng, lat]
+                latlng = L.latLng(snapped[1], snapped[0]);
+            }
+        } catch (err) {
+            console.warn("Snap failed, using original position", err);
+        } finally {
+            loadingMarker.remove();
+        }
+
         if (editorMarkers.length === 0) {
             // First point = START
-            const marker = L.marker(e.latlng, {
+            const marker = L.marker(latlng, {
                 icon: L.divIcon({ className: 'start-marker', html: '🚩', iconSize: [30, 30] }),
                 title: "Départ"
             }).addTo(editorMap);
 
-            addToRoute(marker, e.latlng, "Départ");
+            addToRoute(marker, latlng, "Départ");
         } else {
             // Next points = Checkpoints
             const count = editorMarkers.length; // Just for display name
@@ -56,13 +76,13 @@ window.initEditorMode = function () {
             // Icon simple rouge
             const iconHtml = '<div style="background-color: #e74c3c; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px #c0392b;"></div>';
 
-            const marker = L.marker(e.latlng, {
+            const marker = L.marker(latlng, {
                 icon: L.divIcon({ className: 'manual-marker', html: iconHtml, iconSize: [20, 20] }),
                 title: name,
                 draggable: false // Désactivé à la demande
             }).addTo(editorMap);
 
-            addToRoute(marker, e.latlng, name);
+            addToRoute(marker, latlng, name);
 
             // Re-bind popup with correct ID
             // Default Score est 50
@@ -100,33 +120,59 @@ window.initEditorMode = function () {
             editorMap.setView(latlng, 13);
         });
     }
+
+    // Load Personal POIs
+    if (window.loadMyPointsForEditor) window.loadMyPointsForEditor();
+};
+
+window.loadMyPointsForEditor = async function () {
+    if (!App.state.currentUser) return;
+
+    try {
+        const res = await fetch(`./api/pois.php?user_id=${App.state.currentUser.id}`);
+        const data = await res.json();
+
+        if (data.success && data.points) {
+            data.points.forEach(p => {
+                const iconHtml = '<div style="background-color: #f1c40f; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px orange;"></div>';
+                const m = L.marker([p.lat, p.lng], {
+                    icon: L.divIcon({ className: 'my-poi-marker', html: iconHtml, iconSize: [18, 18] }),
+                    title: p.name + " (" + (p.score || 0) + "pts)"
+                }).addTo(editorMap);
+
+                // Click to add to route
+                m.on('click', () => {
+                    if (confirm(`Ajouter "${p.name}" (${p.score}pts) au parcours ?`)) {
+                        // Custom Add Logic passing ID and Score
+                        const markerForRoute = L.marker([p.lat, p.lng], {
+                            icon: L.divIcon({ className: 'manual-marker', html: iconHtml, iconSize: [20, 20] })
+                        });
+                        // Set properties
+                        markerForRoute._customScore = p.score || 0;
+                        markerForRoute.placeName = p.name;
+                        markerForRoute.placeId = 'custom-' + p.id;
+
+                        addToRoute(markerForRoute, L.latLng(p.lat, p.lng), p.name);
+                    }
+                });
+            });
+        }
+    } catch (e) {
+        console.error("Error loading editor POIs", e);
+    }
 };
 
 // Update marker data from popup inputs
 window.updateMarkerData = function (uniqueId, field, value) {
     const m = editorMarkers.find(marker => marker._uniqueId === uniqueId);
-    if (!m) {
-        console.warn("Marker not found for update:", uniqueId);
-        return;
-    }
-
-    if (field === 'name') {
-        m.placeName = value; // Store custom name
-        console.log("Updated Name for Marker", uniqueId, ":", value);
-    } else if (field === 'score') {
-        m._customScore = parseInt(value, 10);
-        console.log("Updated Score for Marker", uniqueId, ":", value);
-    }
+    if (!m) return;
+    if (field === 'name') m.placeName = value;
+    else if (field === 'score') m._customScore = parseInt(value, 10);
 };
 
 let availablePlaceMarkers = [];
-
 function setStartPoint(latlng) { }
-
-async function loadNearbyPlaces(latlng) {
-    console.log("Mode manuel activé : Pas de recherche automatique.");
-    return;
-}
+async function loadNearbyPlaces(latlng) { console.log("Manual Mode"); return; }
 
 window.selectPlace = function (id, name, lat, lng) {
     const latlng = L.latLng(lat, lng);
@@ -558,4 +604,115 @@ window.initNavMap = function () {
         subdomains: 'abcd',
         maxZoom: 20
     }).addTo(navMap);
+};
+
+// --- POIS MAP LOGIC ---
+let poisMap = null;
+let poisMarkers = [];
+let poisClickEnabled = false;
+
+window.initPoisMap = function () {
+    const container = document.getElementById('pois-map-container');
+    if (!container) return;
+
+    if (poisMap) {
+        poisMap.invalidateSize();
+        return;
+    }
+
+    if (container.classList.contains('leaflet-container')) {
+        container._leaflet_id = null;
+        container.innerHTML = "";
+    }
+
+    poisMap = L.map('pois-map-container').setView(DEFAULT_COORDS, 13);
+    setTimeout(() => { poisMap.invalidateSize(); }, 200);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 20
+    }).addTo(poisMap);
+
+    // Click to add with Snap-to-Road
+    poisMap.on('click', async function (e) {
+        if (!poisClickEnabled) return;
+
+        // Visual feedback
+        const loadingMarker = L.marker(e.latlng, { opacity: 0.5 }).addTo(poisMap);
+
+        try {
+            // SNAP TO ROAD API
+            // Uses OSRM 'nearest' service
+            const url = `https://router.project-osrm.org/nearest/v1/driving/${e.latlng.lng},${e.latlng.lat}?number=1`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            loadingMarker.remove();
+
+            if (data.code === 'Ok' && data.waypoints && data.waypoints.length > 0) {
+                const snapped = data.waypoints[0].location; // [lng, lat]
+                const lat = snapped[1];
+                const lng = snapped[0];
+                const streetName = data.waypoints[0].name;
+
+                // Open Modal with Snapped Coords
+                document.getElementById('poi-lat').value = lat;
+                document.getElementById('poi-lng').value = lng;
+
+                // Pre-fill name if empty (optional comfort)
+                const nameInput = document.getElementById('poi-name');
+                if (!nameInput.value && streetName) {
+                    nameInput.value = streetName;
+                }
+
+                // Show temporary marker at snapped location
+                L.marker([lat, lng], {
+                    icon: L.divIcon({ className: 'poi-marker', html: '<div style="background-color:cyan;width:12px;height:12px;border-radius:50%;"></div>' })
+                }).addTo(poisMap).bindPopup("Point sur route détecté").openPopup();
+
+                const modal = new bootstrap.Modal(document.getElementById('poiModal'));
+                modal.show();
+
+                poisClickEnabled = false;
+
+            } else {
+                alert("Aucune route trouvée à proximité.");
+            }
+        } catch (err) {
+            console.error(err);
+            loadingMarker.remove();
+            alert("Erreur de connexion au service de route.");
+        }
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            poisMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+        });
+    }
+};
+
+window.renderPoisOnMap = function (points) {
+    if (!poisMap) return;
+
+    // Clear old
+    poisMarkers.forEach(m => m.remove());
+    poisMarkers = [];
+
+    points.forEach(p => {
+        const iconHtml = '<div style="background-color: #f1c40f; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white;"></div>';
+        const m = L.marker([p.lat, p.lng], {
+            icon: L.divIcon({ className: 'poi-marker', html: iconHtml, iconSize: [18, 18] })
+        }).addTo(poisMap);
+
+        m.bindPopup(`<strong>${p.name}</strong><br>${p.description || ''}`);
+        poisMarkers.push(m);
+    });
+};
+
+window.enablePoiMapClick = function () {
+    poisClickEnabled = true;
+};
+
+window.disablePoiMapClick = function () {
+    poisClickEnabled = false;
 };

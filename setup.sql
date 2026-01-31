@@ -27,6 +27,19 @@ CREATE TABLE IF NOT EXISTS `tc_routes` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Table des Points Personnalisés (Custom POIs)
+CREATE TABLE IF NOT EXISTS `tc_custom_points` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `score` int(11) DEFAULT 0,
+  `description` text,
+  `lat` double NOT NULL,
+  `lng` double NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Table des Tentatives (Une course lancée par un user)
 CREATE TABLE IF NOT EXISTS `tc_attempts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

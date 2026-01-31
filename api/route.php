@@ -61,8 +61,15 @@ if ($method === 'POST') {
         $filterUser = $_GET['user_id'] ?? 0;
 
         if ($filterUser) {
-            $stmt = $pdo->prepare("SELECT id, name, distance_km, created_at FROM tc_routes WHERE created_by = ? ORDER BY created_at DESC");
-            $stmt->execute([$filterUser]);
+            // Fetch routes from the user OR from their team members
+            $sql = "SELECT DISTINCT r.id, r.name, r.distance_km, r.created_at 
+                    FROM tc_routes r 
+                    LEFT JOIN tc_users u ON r.created_by = u.id 
+                    WHERE r.created_by = ? 
+                       OR (u.team_id IS NOT NULL AND u.team_id != '' AND u.team_id = (SELECT team_id FROM tc_users WHERE id = ?))
+                    ORDER BY r.created_at DESC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$filterUser, $filterUser]);
         } else {
             // Mode "Public" ou global (limité)
             $stmt = $pdo->query("SELECT id, name, distance_km, created_at FROM tc_routes ORDER BY created_at DESC LIMIT 10");

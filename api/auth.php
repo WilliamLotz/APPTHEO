@@ -72,6 +72,25 @@ if ($method === 'POST') {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Erreur SQL']);
         }
+    } elseif ($action === 'update') {
+        $id = $data['id'] ?? 0;
+        $username = $data['username'] ?? '';
+        $mode = $data['mode'] ?? 'solo';
+        $team_id = $data['team_id'] ?? null;
+
+        if (!$id || !$username) {
+            echo json_encode(['success' => false, 'error' => 'Données manquantes']);
+            exit;
+        }
+
+        try {
+            $stmt = $pdo->prepare("UPDATE tc_users SET username = ?, mode = ?, team_id = ? WHERE id = ?");
+            $stmt->execute([$username, $mode, $team_id, $id]);
+            echo json_encode(['success' => true]);
+        } catch (PDOException $e) {
+             http_response_code(500);
+             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 }
 ?>
