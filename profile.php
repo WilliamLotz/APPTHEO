@@ -11,24 +11,40 @@
             <input type="text" class="form-control" id="inp-name" placeholder="Ex: Thomas Voeckler" required>
         </div>
         
-        <div class="mb-3">
-            <label for="inp-mode" class="form-label text-muted">Mode de participation</label>
-            <select id="inp-mode" class="form-select">
-                <option value="solo">Solo</option>
-                <option value="team">Binôme / Équipe</option>
-            </select>
+
+
+        <div class="mb-4">
+            <h3 class="h6 text-muted mb-2">Gestion d'Équipe</h3>
+            <div id="team-ui" class="bg-dark rounded p-3 border border-secondary">
+                <div class="text-center text-muted small">Chargement...</div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="inp-team" class="form-label text-muted">Nom de l'équipe (Partage de parcours)</label>
-            <input type="text" class="form-control" id="inp-team" placeholder="Ex: TEAM_ROCKET" style="text-transform: uppercase;">
-            <div class="form-text small">Partagez ce nom EXACT avec vos amis pour voir leurs parcours.</div>
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100 mb-3">Sauvegarder</button>
+        <!-- Hidden inputs for legacy manual update if needed, but handled by new UI -->
+        <input type="hidden" id="inp-team">
+        
+        <!-- SAVE PROFILE BUTTON REMOVED for Team, kept for Name/Mode -->
+        <button type="submit" class="btn btn-primary w-100 mb-3">Sauvegarder Profil</button>
         <button type="button" class="btn btn-danger w-100 mb-3" onclick="App.logout()">Se déconnecter</button>
     </form>
 </div>
+
+<!-- Modal Create Team -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-surface text-light">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Créer une Équipe</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="new-team-name" class="form-control mb-3" placeholder="Nom de l'équipe (ex: Les Rapides)">
+        <button class="btn btn-primary w-100" onclick="App.createTeam()">Valider</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <?php include 'includes/nav.php'; ?>
 <?php include 'includes/scripts.php'; ?>

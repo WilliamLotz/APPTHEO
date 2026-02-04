@@ -15,6 +15,10 @@
         <i class="ph-fill ph-map-pin fs-4"></i>
         <span class="d-block small">Points</span>
     </a>
+    <a href="results.php" class="nav-link nav-item text-center flex-grow-1 p-2 <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'active' : ''; ?>">
+        <i class="ph-fill ph-trophy fs-4"></i>
+        <span class="d-block small">Résultats</span>
+    </a>
     <a href="profile.php" class="nav-link nav-item text-center flex-grow-1 p-2 <?php echo basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : ''; ?>">
         <i class="ph-fill ph-user fs-4"></i>
         <span class="d-block small">Profil</span>

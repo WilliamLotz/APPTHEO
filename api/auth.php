@@ -84,8 +84,8 @@ if ($method === 'POST') {
         }
 
         try {
-            $stmt = $pdo->prepare("UPDATE tc_users SET username = ?, mode = ?, team_id = ? WHERE id = ?");
-            $stmt->execute([$username, $mode, $team_id, $id]);
+            $stmt = $pdo->prepare("UPDATE tc_users SET username = ?, mode = ? WHERE id = ?");
+            $stmt->execute([$username, $mode, $id]);
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
              http_response_code(500);

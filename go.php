@@ -40,6 +40,35 @@
             <i class="ph-fill ph-play me-2"></i> Simuler Avancée (Démo)
         </button>
     </div>
+    </div>
+
+    <!-- Modal Résultats -->
+    <div class="modal fade" id="resultsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-surface text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">🏆 Course Terminée !</h5>
+            <button type="button" class="btn-close btn-close-white" onclick="location.reload()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            <h1 class="display-4 text-warning mb-3">Bravo !</h1>
+            <p class="lead">Votre score : <strong id="res-score">0 pts</strong></p>
+            <p>Temps : <span id="res-time">00:00:00</span></p>
+
+            <hr class="border-secondary my-4">
+            
+            <h6 class="text-uppercase text-muted small mb-3">Classement Équipe</h6>
+            <div id="results-leaderboard" class="list-group list-group-flush">
+                <!-- Ajax Content -->
+            </div>
+            
+          </div>
+          <div class="modal-footer border-secondary justify-content-center">
+             <button class="btn btn-primary w-100" onclick="location.reload()">Retour aux parcours</button>
+          </div>
+        </div>
+      </div>
+    </div>
 </div>
 
 <?php include 'includes/nav.php'; ?>

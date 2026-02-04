@@ -567,9 +567,41 @@ window.simulateGPSMove = function () {
     navSimulationInterval = setInterval(() => {
         if (i >= allCoords.length) {
             clearInterval(navSimulationInterval);
-            alert("Arrivée !");
+
+            // DEMO: Auto-Finish
             document.getElementById('btn-simulate-gps').textContent = "Relancer Simulation on";
             document.getElementById('btn-simulate-gps').disabled = false;
+
+            // Calculate fake result
+            // Sum of all points
+            const totalScore = window.navPointsData.reduce((acc, p) => acc + (p.score || 0), 0);
+
+            // Fake duration (e.g., 45 minutes + random)
+            const duration = 2700 + Math.floor(Math.random() * 600);
+
+            // GENERATE FAKE VALIDATIONS for details
+            const validations = [];
+            const now = new Date();
+            const startTime = new Date(now.getTime() - (duration * 1000));
+
+            // Simulate that we passed all points
+            if (window.navPointsData) {
+                window.navPointsData.forEach((p, idx) => {
+                    // Fake time: start + (idx / total * duration)
+                    const offsetSec = (idx / window.navPointsData.length) * duration;
+                    const timeAtPoint = new Date(startTime.getTime() + (offsetSec * 1000));
+                    const timeStr = timeAtPoint.toISOString().slice(0, 19).replace('T', ' ');
+
+                    validations.push({
+                        index: idx,
+                        time: timeStr,
+                        lat: p.lat,
+                        lng: p.lng
+                    });
+                });
+            }
+
+            App.finishRoute(totalScore, duration, validations);
             return;
         }
 
