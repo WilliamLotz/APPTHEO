@@ -4,21 +4,34 @@
 <div id="view-profile" class="view active container py-4">
     <header class="mb-4">
         <h2 class="h3">Mon Profil</h2>
+        <div id="profile-alert" class="alert alert-success d-none mt-2 py-2 small" role="alert">
+            Profil mis à jour avec succès !
+        </div>
     </header>
     <form id="profile-form">
         <div class="mb-3">
             <label for="inp-name" class="form-label text-muted">Nom ou Pseudo</label>
             <input type="text" class="form-control" id="inp-name" placeholder="Ex: Thomas Voeckler" required>
         </div>
+
+        <div class="mb-3">
+            <label for="inp-email" class="form-label text-muted">Email</label>
+            <input type="email" class="form-control" id="inp-email" required>
+        </div>
+        
+        <div class="mb-3 border-top border-secondary pt-3 mt-3">
+            <label class="form-label text-light fw-bold">Modifier le mot de passe</label>
+            <div class="mb-2">
+                <input type="password" class="form-control" id="inp-new-pwd" placeholder="Nouveau mot de passe (optionnel)">
+            </div>
+            <div class="mb-2">
+                <input type="password" class="form-control" id="inp-new-pwd-confirm" placeholder="Confirmer nouveau mot de passe">
+            </div>
+        </div>
         
 
 
-        <div class="mb-4">
-            <h3 class="h6 text-muted mb-2">Gestion d'Équipe</h3>
-            <div id="team-ui" class="bg-dark rounded p-3 border border-secondary">
-                <div class="text-center text-muted small">Chargement...</div>
-            </div>
-        </div>
+
 
         <!-- Hidden inputs for legacy manual update if needed, but handled by new UI -->
         <input type="hidden" id="inp-team">
@@ -27,6 +40,13 @@
         <button type="submit" class="btn btn-primary w-100 mb-3">Sauvegarder Profil</button>
         <button type="button" class="btn btn-danger w-100 mb-3" onclick="App.logout()">Se déconnecter</button>
     </form>
+    
+    <div class="mb-4">
+        <h3 class="h6 text-muted mb-2">Gestion d'Équipe</h3>
+        <div id="team-ui" class="bg-dark rounded p-3 border border-secondary">
+            <div class="text-center text-muted small">Chargement...</div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Create Team -->
@@ -40,6 +60,23 @@
       <div class="modal-body">
         <input type="text" id="new-team-name" class="form-control mb-3" placeholder="Nom de l'équipe (ex: Les Rapides)">
         <button class="btn btn-primary w-100" onclick="App.createTeam()">Valider</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirm Password -->
+<div class="modal fade" id="confirmPasswordModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-surface text-light">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Sécurité</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted mb-2">Veuillez confirmer votre mot de passe pour enregistrer les modifications.</p>
+        <input type="password" id="confirm-password-input" class="form-control mb-3" placeholder="Mot de passe actuel">
+        <button class="btn btn-primary w-100" onclick="App.handleProfileSaveConfirm()">Confirmer & Enregistrer</button>
       </div>
     </div>
   </div>

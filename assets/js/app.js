@@ -60,11 +60,34 @@ const App = {
         }
     },
 
-    async saveProfile() {
+    async handleProfileSaveConfirm() {
+        const pwd = document.getElementById('confirm-password-input').value;
+        if (!pwd) { alert("Veuillez entrer votre mot de passe."); return; }
+
+        // Hide Modal
+        const modalEl = document.getElementById('confirmPasswordModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        await this.saveProfile(pwd);
+    },
+
+    async saveProfile(password) {
         if (!this.state.currentUser) return;
 
         const name = document.getElementById('inp-name').value;
+        const email = document.getElementById('inp-email') ? document.getElementById('inp-email').value : this.state.currentUser.email;
         const mode = this.state.currentUser.mode || 'team'; // Default to existing or team
+
+        // New Password Logic
+        const newPwd = document.getElementById('inp-new-pwd') ? document.getElementById('inp-new-pwd').value : '';
+        const newPwdConfirm = document.getElementById('inp-new-pwd-confirm') ? document.getElementById('inp-new-pwd-confirm').value : '';
+
+        // Basic Client Validation
+        if (newPwd && newPwd !== newPwdConfirm) {
+            alert("Les nouveaux mots de passe ne correspondent pas.");
+            return;
+        }
 
         try {
             const res = await fetch('./api/auth.php', {
@@ -73,7 +96,10 @@ const App = {
                     action: 'update',
                     id: this.state.currentUser.id,
                     username: name,
-                    mode: mode
+                    email: email,
+                    mode: mode,
+                    password: password,
+                    new_password: newPwd
                 })
             });
             const data = await res.json();
@@ -81,11 +107,17 @@ const App = {
             if (data.success) {
                 // Update Local State
                 this.state.currentUser.username = name;
+                this.state.currentUser.email = email;
                 this.state.currentUser.mode = mode;
                 localStorage.setItem('tc_user', JSON.stringify(this.state.currentUser));
 
                 this.render(); // Update header name
+
+                // Show success message (will be visible briefly before reload if valid, but reload is requested)
+                // Actually user requested "actualise la page comme CTRL R"
+                window.location.reload();
             } else {
+                alert(data.error);
                 console.error(data.error);
             }
         } catch (e) {
@@ -600,6 +632,9 @@ const App = {
         const nameInput = document.getElementById('inp-name');
         if (nameInput) nameInput.value = this.state.currentUser.username || '';
 
+        const emailInput = document.getElementById('inp-email');
+        if (emailInput) emailInput.value = this.state.currentUser.email || '';
+
         const modeInput = document.getElementById('inp-mode');
         if (modeInput) modeInput.value = this.state.currentUser.mode || 'solo';
 
@@ -607,7 +642,20 @@ const App = {
         if (form) {
             form.onsubmit = (e) => {
                 e.preventDefault();
-                this.saveProfile();
+
+                // Validate New Password Match First
+                const newPwd = document.getElementById('inp-new-pwd') ? document.getElementById('inp-new-pwd').value : '';
+                const newPwdConfirm = document.getElementById('inp-new-pwd-confirm') ? document.getElementById('inp-new-pwd-confirm').value : '';
+                if (newPwd && newPwd !== newPwdConfirm) {
+                    alert("Les nouveaux mots de passe ne correspondent pas.");
+                    return;
+                }
+
+                // Show Password Modal
+                const pwdInput = document.getElementById('confirm-password-input');
+                if (pwdInput) pwdInput.value = '';
+                const modal = new bootstrap.Modal(document.getElementById('confirmPasswordModal'));
+                modal.show();
             };
         }
 

@@ -75,17 +75,50 @@ if ($method === 'POST') {
     } elseif ($action === 'update') {
         $id = $data['id'] ?? 0;
         $username = $data['username'] ?? '';
+        $email = $data['email'] ?? '';
         $mode = $data['mode'] ?? 'solo';
-        $team_id = $data['team_id'] ?? null;
+        $password = $data['password'] ?? '';
 
-        if (!$id || !$username) {
-            echo json_encode(['success' => false, 'error' => 'Données manquantes']);
+        if (!$id || !$username || !$email || !$password) {
+            echo json_encode(['success' => false, 'error' => 'Données manquantes (mot de passe requis)']);
             exit;
         }
 
         try {
-            $stmt = $pdo->prepare("UPDATE tc_users SET username = ?, mode = ? WHERE id = ?");
-            $stmt->execute([$username, $mode, $id]);
+            // Verify Password
+            $stmt = $pdo->prepare("SELECT password FROM tc_users WHERE id = ?");
+            $stmt->execute([$id]);
+            $currentHash = $stmt->fetchColumn();
+
+            if (!password_verify($password, $currentHash)) {
+                 echo json_encode(['success' => false, 'error' => 'Mot de passe incorrect']);
+                 exit;
+            }
+
+            // Check email uniqueness (excluding self)
+            $stmt = $pdo->prepare("SELECT id FROM tc_users WHERE email = ? AND id != ?");
+            $stmt->execute([$email, $id]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'error' => 'Cet email est déjà pris']);
+                exit;
+            }
+
+            // Prepare Update
+            $sql = "UPDATE tc_users SET username = ?, email = ?, mode = ?";
+            $params = [$username, $email, $mode];
+
+            $newPassword = $data['new_password'] ?? '';
+            if ($newPassword) {
+                $sql .= ", password = ?";
+                $params[] = password_hash($newPassword, PASSWORD_DEFAULT);
+            }
+
+            $sql .= " WHERE id = ?";
+            $params[] = $id;
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
              http_response_code(500);
