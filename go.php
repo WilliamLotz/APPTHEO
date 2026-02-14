@@ -1,4 +1,12 @@
-<?php include 'includes/header.php'; ?>
+<?php
+// Force HTTPS
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === "off") {
+    $location = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    header('HTTP/1.1 301 Moved Permanently');
+    header('Location: ' . $location);
+    exit;
+}
+include 'includes/header.php'; ?>
 
 <!-- VIEW: NAVIGATE -->
 <div id="view-navigate" class="view active container py-4">
@@ -18,10 +26,9 @@
             <button class="btn btn-sm btn-link text-white text-decoration-none p-0" onclick="App.stopNavigation()">
                 <i class="ph-bold ph-arrow-left"></i> Retour
             </button>
-            <div class="font-monospace fs-5">00:00:00</div>
         </header>
         
-        <div id="nav-info-header" class="mb-2">
+        <div id="nav-info-header" class="mb-2 text-center">
             <h3 id="nav-route-name" class="h5 mb-0">Nom du parcours</h3>
             <span id="nav-route-stats" class="small text-muted">0 pts • 0 km</span>
         </div>
@@ -36,10 +43,33 @@
             </div>
         </div>
         
-        <button class="btn btn-primary w-100 mb-5" id="btn-simulate-gps" onclick="window.simulateGPSMove()">
-            <i class="ph-fill ph-play me-2"></i> Simuler Avancée (Démo)
+        <div id="race-timer" class="font-monospace display-4 fw-bold mb-3 text-center text-warning">00:00:00</div>
+
+        <!-- BOUTON DÉMARRER -->
+        <button class="btn btn-primary w-100 mb-5 py-3 fs-5 fw-bold shadow-sm" id="btn-start-race" onclick="App.startRealRace()">
+            <i class="ph-fill ph-play me-2"></i> COMMENCER LA COURSE
         </button>
-    </div>
+
+        <!-- CONTRÔLES PENDANT LA COURSE (Cachés au début) -->
+        <div id="race-controls" class="d-none w-100 mb-5">
+            <div class="row g-2">
+                <div class="col-4">
+                    <button class="btn btn-warning w-100 py-3 fw-bold text-white shadow-sm" id="btn-pause-race" onclick="App.togglePauseRace()">
+                        <i class="ph-fill ph-pause me-1"></i> PAUSE
+                    </button>
+                </div>
+                <div class="col-4">
+                     <button class="btn btn-success w-100 py-3 fw-bold text-white shadow-sm" onclick="App.finishRealRace()">
+                        <i class="ph-fill ph-flag me-1"></i> FINIR
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-danger w-100 py-3 fw-bold text-white shadow-sm" onclick="App.cancelRace()">
+                        <i class="ph-bold ph-x me-1"></i> STOP
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Résultats -->

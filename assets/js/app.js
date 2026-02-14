@@ -218,7 +218,179 @@ const App = {
         document.getElementById('nav-selection').classList.remove('d-none');
         document.getElementById('nav-active').classList.add('d-none');
         document.getElementById('nav-active').classList.remove('d-flex');
-        // TODO: Stop tracking in map.js
+
+        // Stop Tracking
+        if (window.stopRealTracking) window.stopRealTracking();
+        if (this.raceTimerInterval) clearInterval(this.raceTimerInterval);
+        this.raceStartTime = null;
+    },
+
+    startRealRace(isSimulation = false) {
+        // Direct Start
+        // UI Toggle
+        const btnStart = document.getElementById('btn-start-race');
+        const controls = document.getElementById('race-controls');
+
+        if (btnStart) btnStart.classList.add('d-none');
+        if (controls) controls.classList.remove('d-none');
+
+        // Reset Pause State
+        this.isPaused = false;
+        const btnPause = document.getElementById('btn-pause-race');
+        if (btnPause) {
+            btnPause.className = 'btn btn-warning w-100 py-3 fw-bold shadow-sm text-white';
+            btnPause.style.backgroundColor = '#ffc107'; // Ensure Yellow
+            btnPause.style.borderColor = '#ffc107';
+            btnPause.style.color = '#ffffff'; // Ensure White Text
+            btnPause.innerHTML = '<i class="ph-fill ph-pause me-1"></i> PAUSE';
+        }
+
+        // Ensure Stop is Red
+        const btnStop = document.querySelector('#race-controls button.btn-danger');
+        if (btnStop) {
+            btnStop.classList.add('bg-danger', 'text-white');
+            btnStop.style.backgroundColor = '#dc3545'; // Ensure Red
+            btnStop.style.borderColor = '#dc3545';
+            btnStop.style.color = '#ffffff'; // Ensure White Text
+        }
+
+        // Init Race State
+        this.currentRaceScore = 0;
+        this.currentRaceValidations = []; // {index, time, lat, lng}
+        this.raceStartTime = new Date();
+
+        // Timer UI
+        const timerEl = document.getElementById('race-timer');
+        if (timerEl) timerEl.textContent = "00:00:00";
+
+        // WAKE LOCK
+        if ('wakeLock' in navigator) {
+            try { navigator.wakeLock.request('screen'); } catch (err) { console.log(err); }
+        }
+
+        // NOTIFICATIONS (HTTPS Required)
+        if ("Notification" in window) {
+            if (window.isSecureContext === false) {
+                // Without HTTPS, Notifications API often fails silently
+                console.warn("Notifications nécessitent HTTPS.");
+                alert("Note : Les notifications ne fonctionneront pas sans HTTPS.");
+            } else {
+                if (Notification.permission === "default") {
+                    Notification.requestPermission().then(perm => {
+                        if (perm === "granted") new Notification("Course démarrée ! 🏁");
+                    });
+                } else if (Notification.permission === "granted") {
+                    new Notification("Course démarrée ! 🏁");
+                }
+            }
+        }
+
+        this.elapsedTime = 0;
+        let lastTime = Date.now();
+
+        this.raceTimerInterval = setInterval(() => {
+            const now = Date.now();
+            if (!this.isPaused) {
+                this.elapsedTime += (now - lastTime);
+                // Format HH:MM:SS
+                const totalSeconds = Math.floor(this.elapsedTime / 1000);
+                const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+                const s = String(totalSeconds % 60).padStart(2, '0');
+                if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
+            }
+            lastTime = now;
+        }, 1000);
+
+        // Start GPS or Simulation
+        const trackingFn = isSimulation && window.startSimulationTracking ? window.startSimulationTracking : window.startRealTracking;
+
+        if (trackingFn) {
+            trackingFn((lat, lng) => {
+                // Callback on position update (optional specific logic here)
+                // Map.js handles validation internally for performance/simplicity?
+                // Actually better to have validation logic here or in map.js?
+                // Let's let map.js call us back on point validation.
+            }, (pointsValidated, totalPoints) => {
+                // Check finish condition if needed
+                if (pointsValidated >= totalPoints) {
+                    this.finishRealRace();
+                }
+            });
+        }
+    },
+
+    recenterMap() {
+        console.log("Recenter Map Triggered");
+        const mapObj = window.navMap || navMap; // Try both
+        if (!mapObj) {
+            console.error("Map not found!");
+            return;
+        }
+
+        // If we have a user marker, center on it
+        const markerObj = window.navUserMarker || navUserMarker;
+        if (markerObj) {
+            const latLng = markerObj.getLatLng();
+            mapObj.setView(latLng, 18, { animate: true });
+        } else {
+            // Otherwise try locate
+            mapObj.locate({ setView: true, maxZoom: 18 });
+        }
+    },
+
+    togglePauseRace() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('btn-pause-race');
+        if (btn) {
+            if (this.isPaused) {
+                btn.classList.replace('btn-warning', 'btn-primary');
+                btn.innerHTML = '<i class="ph-fill ph-play me-1"></i> REPRENDRE';
+            } else {
+                btn.classList.replace('btn-primary', 'btn-warning');
+                btn.innerHTML = '<i class="ph-fill ph-pause me-1"></i> PAUSE';
+            }
+        }
+    },
+
+    cancelRace() {
+        if (confirm("Voulez-vous vraiment annuler la course ?")) {
+            this.stopNavigation();
+            // Reset UI specifically for start button
+            const btnStart = document.getElementById('btn-start-race');
+            const controls = document.getElementById('race-controls');
+            if (btnStart) {
+                btnStart.classList.remove('d-none');
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<i class="ph-fill ph-play me-2"></i> COMMENCER LA COURSE';
+                btnStart.classList.add('btn-primary');
+                btnStart.classList.remove('btn-success');
+            }
+            if (controls) controls.classList.add('d-none');
+        }
+    },
+
+    finishRealRace() {
+        if (this.raceTimerInterval) clearInterval(this.raceTimerInterval);
+
+        const now = new Date();
+        const duration = (now - this.raceStartTime) / 1000; // seconds
+
+        // Calculate Score (sum of validated points)
+        // We need to know WHICH points were validated.
+        // Let's assume map.js tracks validated indices or passes them.
+        // Actually, we can just sum up the score based on `this.currentRaceValidations`.
+
+        let totalScore = 0;
+        // Logic to sum score will be handled in `map.js` callback or pulled.
+        // Let's rely on `window.getRaceStatus()` from map.js?
+        if (window.getRaceStatus) {
+            const status = window.getRaceStatus();
+            totalScore = status.score;
+            this.currentRaceValidations = status.validations;
+        }
+
+        this.finishRoute(totalScore, duration, this.currentRaceValidations);
     },
 
     // --- POIS MODULE ---

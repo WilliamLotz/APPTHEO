@@ -1,7 +1,5 @@
 -- Structure de la base de données TrailConnect
 
-CREATE DATABASE IF NOT EXISTS `trailconnect`;
-USE `trailconnect`;
 
 -- Table Utilisteurs / Equipes
 CREATE TABLE IF NOT EXISTS `tc_users` (
